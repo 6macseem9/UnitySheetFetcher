@@ -4,7 +4,6 @@ using UnityEngine;
 
 public static class SheetManager
 {
-
     private static List<SheetFetcher> _fetchers = new List<SheetFetcher>();
 
     public static void AddDownloader(SheetFetcher downloader)
@@ -13,6 +12,7 @@ public static class SheetManager
         _fetchers.Add(downloader);
     }
 
+    #if UNITY_EDITOR
     [MenuItem("SheetFetcher/Fetch selected", false, 1)]
     public static void FetchSelected()
     {
@@ -32,6 +32,8 @@ public static class SheetManager
     }
 
     [MenuItem("SheetFetcher/Fetch All", false, 2)]
+    #endif
+
     public static void FetchAll()
     {
         if(_fetchers.Count==0)

@@ -6,9 +6,9 @@ public class Example : SheetFetcher
     public float ATK;
 
 
-    public override void OnComplete(string data)
+    public override void HandleFetchedData(string data)
     {
-        var list = GetRowByFirstColumn(data, Name);
+        var list = GetRowByFirstColumn(Name);
         HP = float.Parse(list[1]);
         DEF = float.Parse(list[2]);
         ATK = float.Parse(list[3]); 

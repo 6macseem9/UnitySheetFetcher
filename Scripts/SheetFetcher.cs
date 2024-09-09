@@ -1,14 +1,45 @@
-using System.Collections.Generic;
-using System.Linq;
+using System;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.Networking;
 
-[CreateAssetMenu(fileName ="SO",menuName ="New so",order = 0)]
 public class SheetFetcher : ScriptableObject
 {
     [HideInInspector] public string SheetsID;
     [HideInInspector] public string SheetName;
-    [HideInInspector] public string Data;
+    [HideInInspector] public string Data { get; private set; }
+
+    /// <summary>
+    /// Fetched data parsed into a two-dimensional string array
+    /// </summary>
+    public string[][] ParsedData
+    {
+        get
+        {
+            if (string.IsNullOrEmpty(Data))
+            {
+                Debug.LogError("Data is null or empty");
+                return null;
+            }
+
+            var rows = Data.Split(new char[] { '\r', '\n' });
+            var result = new string[rows.Length][];
+
+            for (int i = 0; i < rows.Length; i++)
+            {
+                var columns = rows[i].Split(",");
+                result[i] = new string[columns.Length];
+                Array.Copy(columns, result[i], columns.Length);
+            }
+
+            return result;
+        }
+    }
+
+    /// <summary>
+    /// Event triggered after data is successfully fetched. The fetched data is passed as a string parameter.
+    /// </summary>
+    public event Action<string> OnComplete;
 
     private void OnValidate()
     {
@@ -34,44 +65,30 @@ public class SheetFetcher : ScriptableObject
                 return;
             }
 
-            Data = webRequest.downloadHandler.text;
-            OnComplete(Data);
+            Data = webRequest.downloadHandler.text.Replace("\"", "");
+            OnComplete?.Invoke(Data);
+            HandleFetchedData(Data);
             webRequest.Dispose();
         };
+
+        #if UNITY_EDITOR
+        EditorUtility.SetDirty(this);
+        #endif
     }
 
     /// <summary>
-    /// Called after the data was successfully fetched.
+    /// Override this method to handle the successfully fetched data.
     /// </summary>
-    /// <param name="data"></param>
-    public virtual void OnComplete(string data)
+    /// <param name="data">Fetched data.</param>
+    public virtual void HandleFetchedData(string data)
     {
 
     }
 
-    /// <param name="data">Fetched data.</param>
-    /// <returns>Two dimensional list of all rows and columns.</returns>
-    public List<List<string>> ParseData(string data)
-    {
-        var result = new List<List<string>>();
-
-        data = data.Replace("\"", "");
-        var rows = data.Split(new char[] { '\r','\n'});
-        for(int i = 0; i < rows.Length; i++)
-        {
-            result.Add(new List<string>());
-            result[i].AddRange(rows[i].Split(","));
-        }
-
-        return result;
-    }
-
-    /// <param name="data">Fetched data.</param>
     /// <param name="target">Value to search for.</param>
     /// <returns>Row of data where the target matches the value of the first column.</returns>
-    public List<string> GetRowByFirstColumn(string data, string target)
+    public string[] GetRowByFirstColumn(string target)
     {
-        var parsedData = ParseData(data);
-        return parsedData.First(x => x[0] == target); 
+        return Array.Find(ParsedData, x => x[0] == target);
     }
 }
